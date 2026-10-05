@@ -1,4 +1,4 @@
--- VoidSnow | Blade Ball (Extended)
+-- VoidSnow | Blade Ball
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,11 +10,6 @@ local Camera = workspace.CurrentCamera
 local cfg = {
     autoParry = false,
     parryRange = 20,
-    autoBlock = false,
-    autoDash = false,
-    autoJump = false,
-    autoRespawn = false,
-    autoBuy = false,
     espBall = false,
     espPlayers = false,
     espNames = false,
@@ -29,7 +24,6 @@ local cfg = {
     infJump = false,
     fullbright = false,
     antiAfk = false,
-    antiAntiCheat = true,
     fov = 70
 }
 
@@ -44,10 +38,10 @@ gui.Name = "VoidSnow"
 gui.ResetOnSpawn = false
 gui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- КНОПКА ОТКРЫТИЯ
+-- КНОПКА V
 local openBtn = Instance.new("TextButton")
 openBtn.Size = UDim2.new(0, 50, 0, 50)
-openBtn.Position = UDim2.new(0, 20, 0.5, 0)
+openBtn.Position = UDim2.new(0, 20, 0, 20)
 openBtn.BackgroundColor3 = bg
 openBtn.Text = "V"
 openBtn.TextColor3 = accent2
@@ -55,7 +49,7 @@ openBtn.TextSize = 22
 openBtn.Font = Enum.Font.GothamBold
 openBtn.BorderSizePixel = 0
 openBtn.Active = true
-openBtn.Draggable = true
+openBtn.Draggable = false
 openBtn.Parent = gui
 
 local obCorner = Instance.new("UICorner")
@@ -70,12 +64,12 @@ obStroke.Parent = openBtn
 
 -- ОКНО
 local main = Instance.new("Frame")
-main.Size = UDim2.new(0, 240, 0, 360)
-main.Position = UDim2.new(0, 80, 0.5, -180)
+main.Size = UDim2.new(0, 240, 0, 380)
+main.Position = UDim2.new(0, 80, 0, 20)
 main.BackgroundColor3 = bg
 main.BorderSizePixel = 0
 main.Active = true
-main.Draggable = true
+main.Draggable = false
 main.Visible = false
 main.Parent = gui
 
@@ -126,12 +120,10 @@ cCorner.Parent = close
 
 close.MouseButton1Click:Connect(function()
     main.Visible = false
-    openBtn.Visible = true
 end)
 
 openBtn.MouseButton1Click:Connect(function()
-    main.Visible = true
-    openBtn.Visible = false
+    main.Visible = not main.Visible
 end)
 
 local scroll = Instance.new("ScrollingFrame")
@@ -141,7 +133,7 @@ scroll.BackgroundTransparency = 1
 scroll.BorderSizePixel = 0
 scroll.ScrollBarThickness = 3
 scroll.ScrollBarImageColor3 = accent
-scroll.CanvasSize = UDim2.new(0, 0, 0, 1200)
+scroll.CanvasSize = UDim2.new(0, 0, 0, 900)
 scroll.Parent = main
 
 local layout = Instance.new("UIListLayout")
@@ -166,7 +158,7 @@ local function createToggle(name, callback)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(1, -5, 0, 36)
     btn.BackgroundColor3 = btnOff
-    btn.Text = name
+    btn.Text = name .. "  [ВЫКЛ]"
     btn.TextColor3 = textCol
     btn.TextSize = 13
     btn.Font = Enum.Font.Gotham
@@ -187,9 +179,11 @@ local function createToggle(name, callback)
     btn.MouseButton1Click:Connect(function()
         state = not state
         if state then
+            btn.Text = name .. "  [ВКЛ]"
             btn.BackgroundColor3 = Color3.fromRGB(40, 30, 60)
             bs.Transparency = 0.2
         else
+            btn.Text = name .. "  [ВЫКЛ]"
             btn.BackgroundColor3 = btnOff
             bs.Transparency = 0.7
         end
@@ -268,21 +262,23 @@ local function createSlider(name, min, max, default, callback)
     end)
 end
 
--- АНТИ-АНТИЧИТ
-if cfg.antiAntiCheat then
-    pcall(function()
-        local mt = getrawmetatable(game)
-        local old = mt.__namecall
-        setreadonly(mt, false)
-        mt.__namecall = newcclosure(function(self, ...)
-            local method = getnamecallmethod()
-            if method == "Kick" then return nil end
-            if method == "FireServer" and self.Name == "Kick" then return nil end
-            return old(self, ...)
-        end)
-        setreadonly(mt, true)
+-- АНТИ-КИК
+pcall(function()
+    local mt = getrawmetatable(game)
+    local old = mt.__namecall
+    setreadonly(mt, false)
+    mt.__namecall = newcclosure(function(self, ...)
+        local method = getnamecallmethod()
+        if method == "Kick" then
+            return nil
+        end
+        if method == "FireServer" and self.Name == "Kick" then
+            return nil
+        end
+        return old(self, ...)
     end)
-end
+    setreadonly(mt, true)
+end)
 
 -- ESP
 local drawings = {}
@@ -332,15 +328,6 @@ local function esp()
                 t.Text = "BALL"
                 t.Position = Vector2.new(sp.X, sp.Y)
                 table.insert(drawings, t)
-                if cfg.espTracers then
-                    local l = Drawing.new("Line")
-                    l.Visible = true
-                    l.Color = accent
-                    l.Thickness = 1
-                    l.From = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y)
-                    l.To = Vector2.new(sp.X, sp.Y)
-                    table.insert(drawings, l)
-                end
             end
         end
     end
@@ -423,69 +410,20 @@ local function autoParry()
     end
 end
 
--- AUTO BLOCK / DASH / JUMP
-local function autoBlock()
-    if not cfg.autoBlock then return end
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.JumpPower = 0 end
-end
-
-local function autoDash()
-    if not cfg.autoDash then return end
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        local dir = hum.MoveDirection
-        if dir.Magnitude > 0 then
-            local hrp = char:FindFirstChild("HumanoidRootPart")
-            if hrp then hrp.Velocity = dir * 80 end
-        end
-    end
-end
-
-local function autoJump()
-    if not cfg.autoJump then return end
-    local char = LocalPlayer.Character
-    if not char then return end
-    local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum and hum:GetState() == Enum.HumanoidStateType.Landed then
-        hum.Jump = true
-    end
-end
-
--- AUTO RESPAWN
-local function autoRespawn()
-    if not cfg.autoRespawn then return end
-    local char = LocalPlayer.Character
-    if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
-        LocalPlayer:LoadCharacter()
-    end
-end
-
--- AUTO BUY
-local function autoBuy()
-    if not cfg.autoBuy then return end
-    local guiP = LocalPlayer:FindFirstChild("PlayerGui")
-    if not guiP then return end
-    for _, v in pairs(guiP:GetDescendants()) do
-        if v:IsA("TextButton") then
-            local t = v.Text:lower()
-            if t:find("buy") or t:find("purchase") or t:find("купить") then
-                v:FireServer()
-            end
-        end
-    end
-end
-
--- ДВИЖЕНИЕ
+-- ДВИЖЕНИЕ (с задержкой, чтобы не кикнуло)
 local function speed()
     local char = LocalPlayer.Character
     if not char then return end
     local hum = char:FindFirstChildOfClass("Humanoid")
-    if hum then hum.WalkSpeed = cfg.speed and cfg.speedVal or 16 end
+    if not hum then return end
+    if cfg.speed then
+        if hum.WalkSpeed ~= cfg.speedVal then
+            task.wait(0.1)
+            hum.WalkSpeed = cfg.speedVal
+        end
+    else
+        hum.WalkSpeed = 16
+    end
 end
 
 local function godmode()
@@ -570,28 +508,16 @@ RunService.RenderStepped:Connect(function()
     fly()
     fullbright()
     fov()
-    autoBlock()
-    autoDash()
-    autoJump()
-    autoRespawn()
 end)
 
 RunService.Heartbeat:Connect(function()
     autoParry()
-    autoBuy()
 end)
 
--- СЕКЦИИ И КНОПКИ
-createSection("PARry")
+-- КНОПКИ
+createSection("Parry")
 createToggle("Auto Parry", function(v) cfg.autoParry = v end)
 createSlider("Parry Range", 5, 100, 20, function(v) cfg.parryRange = v end)
-
-createSection("Combat")
-createToggle("Auto Block", function(v) cfg.autoBlock = v end)
-createToggle("Auto Dash", function(v) cfg.autoDash = v end)
-createToggle("Auto Jump", function(v) cfg.autoJump = v end)
-createToggle("Auto Respawn", function(v) cfg.autoRespawn = v end)
-createToggle("Auto Buy", function(v) cfg.autoBuy = v end)
 
 createSection("ESP")
 createToggle("ESP Ball", function(v) cfg.espBall = v end)
@@ -610,7 +536,6 @@ createToggle("Infinite Jump", function(v) cfg.infJump = v end)
 
 createSection("Protection")
 createToggle("Godmode", function(v) cfg.godmode = v end)
-createToggle("Anti-AntiCheat", function(v) cfg.antiAntiCheat = v end)
 
 createSection("Visual")
 createToggle("Fullbright", function(v) cfg.fullbright = v end)
