@@ -1,29 +1,27 @@
 -- VoidSnow Loader
-local Players = game:GetService("Players")
-local LocalPlayer = Players.LocalPlayer
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
-local MODULE_URL = "https://raw.githubusercontent.com/sashapromax278-maker/VoidSnow/refs/heads/main/Games/BladeBall.lua"
+local Window = Rayfield:CreateWindow({
+    Name = "VoidSnow",
+    LoadingTitle = "VoidSnow",
+    LoadingSubtitle = "neon hub",
+    ConfigurationSaving = { Enabled = true, FolderName = "VoidSnow", FileName = "config" }
+})
 
-local function notify(text)
-    pcall(function()
-        game:GetService("StarterGui"):SetCore("SendNotification", {
-            Title = "VoidSnow",
-            Text = text,
-            Duration = 4
-        })
+local function loadModule(name)
+    local url = "https://raw.githubusercontent.com/sashapromax278-maker/VoidSnow/refs/heads/main/Games/" .. name .. ".lua"
+    local ok, err = pcall(function()
+        loadstring(game:HttpGet(url))()
     end)
+    if not ok then
+        Rayfield:Notify({Title = "Ошибка", Content = "Модуль " .. name .. " не загрузился", Duration = 5})
+    end
 end
 
-notify("VoidSnow загружается...")
+local MainTab = Window:CreateTab("Главная", 4483362458)
 
-local ok, err = pcall(function()
-    local src = game:HttpGet(MODULE_URL)
-    local fn = loadstring(src)
-    fn()
-end)
+MainTab:CreateSection("VoidSnow")
+MainTab:CreateButton({Name = "Universal", Callback = function() loadModule("Universal") end})
+MainTab:CreateButton({Name = "Blade Ball", Callback = function() loadModule("BladeBall") end})
 
-if ok then
-    notify("VoidSnow загружен")
-else
-    notify("Ошибка загрузки: " .. tostring(err))
-end
+Rayfield:LoadConfiguration()
